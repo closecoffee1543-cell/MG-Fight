@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MG Fight</title>
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to right, #1e1e2f, #2a2a40);
+    color: white;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    position: relative;
+    cursor: none;
+  }
+
+  /* Floating lights container */
+  .light-container {
+    position: fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    z-index:0;
+    overflow:hidden;
+  }
+
+  .light {
+    position:absolute;
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background: rgba(255,69,0,0.7);
+    box-shadow: 0 0 15px #ff4500, 0 0 30px #ff944d inset;
+    animation: float linear infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0) translateX(0); opacity:0.5;}
+    50% { opacity:1; }
+    100% { transform: translateY(-1000px) translateX(50px); opacity:0;}
+  }
+
+  /* Custom glowing cursor */
+  #cursor {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: rgba(255,69,0,0.8);
+    box-shadow: 0 0 20px #ff4500, 0 0 40px #ff944d inset;
+    transform: translate(-50%, -50%);
+    transition: transform 0.05s linear, box-shadow 0.2s ease;
+    z-index:1000;
+  }
+
+  /* Access Bar */
+  .access-bar {
+    background: #ff4500;
+    padding: 20px;
+    font-size: 2em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: 0 0 20px #ff4500, 0 0 40px #ff4500 inset;
+    animation: glow 2s infinite alternate;
+    z-index: 1;
+  }
+  @keyframes glow {
+    0% { box-shadow: 0 0 20px #ff4500, 0 0 40px #ff4500 inset; }
+    100% { box-shadow: 0 0 50px #ff944d, 0 0 60px #ff944d inset; }
+  }
+
+  /* Form Styling */
+  .form-container {
+    background: #222;
+    border-radius: 15px;
+    padding: 20px;
+    width: 350px;
+    margin: 40px auto;
+    box-shadow: 0 0 20px #ff4500, 0 0 40px #ff4500 inset;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    transition: 0.3s;
+    z-index: 1;
+  }
+  .form-container:hover { box-shadow:0 0 40px #ff944d; transform: translateY(-3px);}
+  .form-container h2 { text-align:center; margin-bottom:20px; color:#ff944d; }
+  label { display:block; margin:10px 0 5px; }
+  input { width:100%; padding:10px; border:none; border-radius:8px; margin-bottom:15px; transition:0.3s; }
+  input:focus { outline:none; box-shadow:0 0 15px #ff4500; transform: scale(1.05);}
+  button { width:100%; padding:12px; background:#ff4500; border:none; border-radius:8px; font-size:1.2em; color:white; cursor:pointer; font-weight:bold; margin-bottom:10px; transition:0.3s; }
+  button:hover { background:#e63e00; box-shadow:0 0 20px #ff944d; transform: translateY(-2px) scale(1.05); }
+
+  .error { color:#ff6b6b; font-weight:bold; margin:10px 0; text-align:center; }
+
+  #codePage { display:none; }
+  #codePage input { width:60%; display:inline-block; margin-right:10px; }
+  #resendCodeBtn { background: blue; margin-left: 15px; }
+
+  /* Hero Cards */
+  .hero { background:#333; border-radius:15px; margin:40px auto; padding:20px; width:80%; max-width:800px; box-shadow:0 0 20px #ff4500; transition:0.3s; position:relative; cursor:pointer; z-index: 1;}
+  .hero:hover { box-shadow:0 0 50px #ff944d, 0 0 70px #ff4500 inset; transform: translateY(-8px) scale(1.02); }
+  .hero img { display:block; margin:0 auto; max-width:300px; border-radius:10px; border:3px solid #ff4500; transition:0.3s; }
+  .hero img:hover { transform: scale(1.05); box-shadow:0 0 20px #ff944d; }
+  .skills { margin-top:15px; text-align:center; list-style:none; padding:0; }
+  .skills li { font-size:1.2em; margin:8px 0; }
+
+  .event-box { max-width:700px; margin:40px auto; padding:30px; border-radius:20px; background: linear-gradient(135deg, #8e2de2, #ff512f); text-align:center; box-shadow:0px 5px 20px rgba(0,0,0,0.3); animation: fadeIn 1.5s ease-in-out; transition:0.3s; z-index: 1;}
+  .event-box:hover { box-shadow:0 0 50px #ff944d; transform: translateY(-5px); }
+  .event-box h2 { font-size:28px; font-weight:bold; margin-bottom:15px; }
+  .event-box p { font-size:18px; margin:10px 0; line-height:1.6; }
+  .highlight { color: yellow; font-weight: bold; }
+
+  @keyframes fadeIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+
+  #logoutBtn {
+  position: fixed;
+  bottom: 20px;       /* distance from bottom */
+  left: 50%;          /* center horizontally */
+  transform: translateX(-50%); /* truly center it */
+  padding: 6px 12px;  /* smaller button */
+  font-size: 0.9em;   /* smaller text */
+  border-radius: 8px;
+  background: red;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+  z-index: 1;
+}
+
+#logoutBtn:hover {
+  box-shadow: 0 0 30px #ff944d;
+  transform: translateX(-50%) scale(1.1);
+}
+
+  }
+  #logoutBtn:hover { box-shadow:0 0 30px #ff944d; transform: scale(1.1); }
+</style>
+</head>
+<body>
+<div class="light-container" id="lights"></div>
+<div id="cursor"></div>
+<div class="access-bar">MG Fight Access</div>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="form-container">
+  <h2>Log In</h2>
+  <label>Username</label>
+  <input type="text" id="loginUsername">
+  <label>Email</label>
+  <input type="email" id="loginEmail">
+  <label>Password</label>
+  <input type="password" id="loginPassword">
+  <button onclick="login()">Login</button>
+  <div class="error" id="loginError"></div>
+  <p style="text-align:center;">Don’t have an account? <a href="#" onclick="showSignup()">Sign up</a></p>
+</div>
+
+<!-- SIGNUP PAGE -->
+<div id="signupPage" class="form-container" style="display:none;">
+  <h2>Sign Up</h2>
+  <label>Username</label>
+  <input type="text" id="signupUsername">
+  <label>Email</label>
+  <input type="email" id="signupEmail">
+  <label>Password</label>
+  <input type="password" id="signupPassword">
+  <button onclick="signup()">Sign Up</button>
+  <div class="error" id="signupError"></div>
+  <p style="text-align:center;">Already have an account? <a href="#" onclick="showLogin()">Log in</a></p>
+</div>
+
+<!-- OTP CODE PAGE -->
+<div id="codePage" class="form-container">
+  <h2>Enter Verification Code</h2>
+  <input type="text" id="loginCode" placeholder="Enter code">
+  <button onclick="verifyCode()">Verify Code</button>
+  <button id="resendCodeBtn" onclick="resendCode()">Resend Code</button>
+  <div class="error" id="codeError"></div>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="mainPage" style="display:none;"> 
+  <header>
+    <h1>🌍 Welcome to MG Fight</h1>
+    <p>This webpage was created by Omar!</p>
+  </header>
+
+  <!-- Hero 1 -->
+  <div class="hero">
+    <h2>Kaelen "The Red Scythe"</h2>
+    <img src="index (1).png" alt="Kaelen">
+    <ul class="skills">
+      <li>🔥 Wields a blazing scythe</li>
+      <li>⚡ Fast and agile</li>
+      <li>💪 Fearless warrior</li>
+    </ul>
+  </div>
+
+  <!-- Hero 2 -->
+  <div class="hero">
+    <h2>Seraphina "The Celestial"</h2>
+    <img src="index (2).png" alt="Seraphina">
+    <ul class="skills">
+      <li>✨ Master of divine light and healing</li>
+      <li>🕊 Brings hope to her allies</li>
+      <li>⚔ Can summon celestial blades</li>
+    </ul>
+  </div>
+
+  <div class="hero">
+  <h2>3. Jax "Wastelander"</h2>
+  <img src="index (3).png" alt="Jax">
+  <ul class="skills">
+    <li>🔫 Expert scavenger and marksman</li>
+    <li>🏜 Survives the harshest wastelands</li>
+    <li>🛠 Uses modified weapons and gadgets</li>
+  </ul>
+</div>
+
+<div class="hero">
+  <h2>4. Zane "Ghost"</h2>
+  <img src="index (4).png" alt="Zane">
+  <ul class="skills">
+    <li>👻 Master of stealth and shadows</li>
+    <li>⚔ Strikes silently and vanishes</li>
+    <li>🌀 Uses smoke and illusions</li>
+  </ul>
+</div>
+
+<div class="hero">
+  <h2>5. Elias "Stormbringer"</h2>
+  <img src="index (5).png" alt="Elias">
+  <ul class="skills">
+    <li>🌩 Controls thunder and lightning</li>
+    <li>🌪 Summons violent storms in battle</li>
+    <li>⚡ Unpredictable and destructive force</li>
+  </ul>
+</div>
+
+<div class="hero">
+  <h2>6. Darius "Iron Fist"</h2>
+  <img src="index (6).png" alt="Darius">
+  <ul class="skills">
+    <li>🥊 Close combat powerhouse</li>
+    <li>🛡 Endurance like solid steel</li>
+    <li>🔥 Unstoppable in melee fights</li>
+  </ul>
+</div>
+
+<div class="hero">
+  <h2>7. Ryder "The Outlaw"</h2>
+  <img src="index (7).png" alt="Ryder">
+  <ul class="skills">
+    <li>🔫 Dual revolver gunslinger</li>
+    <li>🏍 Nomadic rebel with no master</li>
+    <li>🎯 Deadly accurate sharpshooter</li>
+  </ul>
+</div>
+
+<div class="hero">
+  <h2>8. Kira "Shadowblade"</h2>
+  <img src="index (8).png" alt="Kira">
+  <ul class="skills">
+    <li>🗡 Assassin with twin blades</li>
+    <li>🌌 Moves through the cover of night</li>
+    <li>💨 Deadly precision and speed</li>
+  </ul>
+</div>
+
+<div class="hero">
+  <h2>9. Aris "Flameheart"</h2>
+  <img src="index (9).png" alt="Aris">
+  <ul class="skills">
+    <li>🔥 Manipulates fire at will</li>
+    <li>❤ Heart burns with passion and rage</li>
+    <li>💥 Creates explosive attacks</li>
+  </ul>
+</div>
+
+<div class="hero">
+  <h2>10. Lyra "Moonveil"</h2>
+  <img src="index (10).png" alt="Lyra">
+  <ul class="skills">
+    <li>🌙 Channels the power of the moon</li>
+    <li>🔮 Uses mystical lunar magic</li>
+    <li>✨ Graceful and enigmatic fighter</li>
+  </ul>
+</div>
+
+
+  <div class="event-box">
+    <h2>🌟 SPECIAL EVENT: TEEN TITANS 🌟</h2>
+    <p>👫 Join Robin, Raven, Beast Boy, Starfire, and Cyborg in an <b>epic showdown!</b></p>
+    <p>⚡ Unlock secret powers, face new villains, and earn <span class="highlight">exclusive rewards</span>.</p>
+  </div>
+<!-- TEAM SECTION -->
+<div class="event-box">
+  <h2>👑 Team of Event 👑</h2>
+</div>
+  <!-- Robin -->
+  <div class="hero">
+    <h2>Robin</h2>
+    <img src="Robin.png" alt="Robin" width="150">
+    <ul class="skills">
+      <li>⚔ Martial Arts</li>
+      <li>🧠 Leadership</li>
+      <li>🎯 Strategy</li>
+    </ul>
+  </div>
+
+  <!-- Beast Boy -->
+  <div class="hero">
+    <h2>Beast Boy</h2>
+    <img src="Beast-Boy.png" alt="Beast Boy" width="150">
+    <ul class="skills">
+      <li>🐾 Shape-shifting</li>
+      <li>🦅 Flight (animal forms)</li>
+      <li>💚 Team Spirit</li>
+    </ul>
+  </div>
+<!-- Starfire -->
+<div class="hero">
+  <h2>Starfire</h2>
+  <img src="Star-Fire.png" alt="Starfire" width="150">
+  <ul class="skills">
+    <li>🔥 Starbolts</li>
+    <li>⚡ Super Strength</li>
+    <li>☄ Flight</li>
+  </ul>
+</div>
+
+  <!-- Raven -->
+  <div class="hero">
+    <h2>Raven</h2>
+    <img src="Raven.png" alt="Raven" width="150">
+    <ul class="skills">
+      <li>🔮 Dark Magic</li>
+      <li>🕊 Telekinesis</li>
+      <li>🌓 Soul-Self Projection</li>
+    </ul>
+  </div>
+
+  <!-- Cyborg -->
+  <div class="hero">
+    <h2>Cyborg</h2>
+    <img src="Cyber-Borg.png" alt="Cyborg" width="150">
+    <ul class="skills">
+      <li>🔧 Tech Genius</li>
+      <li>💪 Super Strength</li>
+      <li>⚡ Energy Blaster</li>
+    </ul>
+  </div>
+
+
+    <!-- Team Management Box -->
+    <div class="event-box">
+      <h2>👑 TEAM MANAGEMENT 👑</h2>
+      <p><b>Leader & Admin:</b> Malek Kamal</p>
+      <p><b>Semi Leader & Semi Admin:</b> Yasso-5 & Omar Ahmed Hassan & {Unknown person}</p>
+      <p><b>Moderators & Members:</b> Gasser 555, ALmany, EL NENJA, Ym66, Adam Ahmed Ismail</p>
+    </div>
+  
+
+  <button id="logoutBtn" onclick="logout()">Log Out</button>
+</div>
+
+<script>
+emailjs.init("IcGWQCR_evOinOhPW");
+let generatedCode="";
+let loggedInUser=null;
+
+// Floating lights
+const lightsContainer=document.getElementById("lights");
+for(let i=0;i<30;i++){
+  const light=document.createElement("div");
+  light.className="light";
+  light.style.left=Math.random()*window.innerWidth+"px";
+  light.style.top=Math.random()*window.innerHeight+"px";
+  light.style.width=(5+Math.random()*10)+"px";
+  light.style.height=light.style.width;
+  light.style.animationDuration=(5+Math.random()*5)+"s";
+  lightsContainer.appendChild(light);
+}
+
+// Custom cursor
+const cursor=document.getElementById("cursor");
+document.addEventListener("mousemove",e=>{
+  cursor.style.left=e.clientX+"px";
+  cursor.style.top=e.clientY+"px";
+});
+
+// Page navigation
+function showSignup(){document.getElementById("loginPage").style.display="none";document.getElementById("signupPage").style.display="block";}
+function showLogin(){document.getElementById("signupPage").style.display="none";document.getElementById("loginPage").style.display="block";}
+
+// Signup (goes directly to code page)
+function signup(){
+  const username=document.getElementById("signupUsername").value;
+  const email=document.getElementById("signupEmail").value;
+  const password=document.getElementById("signupPassword").value;
+  if(!username||!email||!password){document.getElementById("signupError").innerText="Fill all fields!";return;}
+  let users=JSON.parse(localStorage.getItem("users")||"[]");
+  if(users.some(u=>u.email===email)){document.getElementById("signupError").innerText="Email already used!";return;}
+  users.push({username,email,password}); localStorage.setItem("users",JSON.stringify(users));
+  loggedInUser={username,email};
+  generatedCode=Math.floor(1000+Math.random()*9000);
+  emailjs.send("Magic.Ghost7","Magic.Ghost777",{to_email:email,username:username,verification_code:generatedCode})
+    .then(()=>console.log("Code sent")).catch(err=>console.error(err));
+  document.getElementById("signupPage").style.display="none";
+  document.getElementById("codePage").style.display="block";
+}
+
+// Login
+function login(){
+  const email=document.getElementById("loginEmail").value;
+  const password=document.getElementById("loginPassword").value;
+  let users=JSON.parse(localStorage.getItem("users")||"[]");
+  const user=users.find(u=>u.email===email&&u.password===password);
+  if(!user){document.getElementById("loginError").innerText="Invalid credentials!";return;}
+  loggedInUser=user;
+  generatedCode=Math.floor(1000+Math.random()*9000);
+  emailjs.send("Magic.Ghost7","Magic.Ghost777",{to_email:user.email,username:user.username,verification_code:generatedCode})
+  .then(()=>console.log("Code sent")).catch(err=>console.error(err));
+  document.getElementById("loginPage").style.display="none";
+  document.getElementById("codePage").style.display="block";
+}
+
+function verifyCode(){
+  const code=document.getElementById("loginCode").value;
+  if(code==generatedCode){
+    document.getElementById("codePage").style.display="none";
+    document.getElementById("mainPage").style.display="block";
+  } else {document.getElementById("codeError").innerText="Wrong code!";}
+}
+
+function resendCode(){
+  generatedCode=Math.floor(1000+Math.random()*9000);
+  emailjs.send("Magic.Ghost7","Magic.Ghost777",{to_email:loggedInUser.email,username:loggedInUser.username,verification_code:generatedCode})
+  .then(()=>alert("Code resent!")).catch(err=>console.error(err));
+}
+
+// Logout
+function logout(){
+  document.getElementById("mainPage").style.display="none";
+  document.getElementById("loginPage").style.display="block";
+  loggedInUser=null;
+}
+</script>
+</body>
+</html>
